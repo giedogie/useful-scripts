@@ -116,8 +116,8 @@ while True:
     
     choice = input(f"Enter your choice {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}: ")
     
-    if choice == '1':
-        sort_option = 'size'
+    if choice in ('1', '2', '3', '4', '5'):
+        sort_option = 'size' if choice == '1' else 'date' if choice == '2' else 'extension' if choice == '3' else 'alphabetical' if choice == '4' else 'phrase'
         dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
         reverse_sort = input(f"Sort order ({RED}S{RESET} for small-to-large / {RED}L{RESET} for large-to-small): \n").lower() == 'l'
         extension = input(f"Enter file extension {RED}(e.g., '.txt'){RESET} to filter by extension or leave blank to list all files: \n").lower()
@@ -130,65 +130,9 @@ while True:
             date_filter = (specific_date, specific_date)
         else:
             date_filter = None
+        phrase = input(f"Enter the phrase to search for in file names: \n") if sort_option == 'phrase' else None
         start()
-        list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter)
-        end()
-    elif choice == '2':
-        sort_option = 'date'
-        dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
-        date_sort_reverse = input(f"Sort by date order (enter {RED}O{RESET} for oldest-to-newest or {RED}N{RESET} for newest-to-oldest): \n").lower() == 'n'     
-        date_filter_option = get_date_filter_option()
-        if date_filter_option == 'r':
-            start_date, end_date = get_date_range()
-            date_filter = (start_date, end_date)
-        elif date_filter_option == 'd':
-            specific_date = get_specific_day()
-            date_filter = (specific_date, specific_date)
-        else:
-            date_filter = None
-        extension = None  # Removed the extension prompt in this option
-        start()
-        list_files_in_dir(dir_path, sort_option, reverse_sort=False, date_sort_reverse=date_sort_reverse, extension=extension, date_filter=date_filter)
-        end()
-    elif choice == '3':
-        sort_option = 'extension'
-        dir_path = input(f"Type in the {RED}path{RESET} that you want to check: \n")
-        extension = input(f"Enter file extension {GREEN}(e.g., '.txt'){RESET} to filter by extension or leave blank to list all files: \n").lower()
-        date_filter_option = get_date_filter_option()
-        if date_filter_option == 'r':
-            start_date, end_date = get_date_range()
-            date_filter = (start_date, end_date)
-        elif date_filter_option == 'd':
-            specific_date = get_specific_day()
-            date_filter = (specific_date, specific_date)
-        else:
-            date_filter = None
-        start()
-        list_files_in_dir(dir_path, sort_option, reverse_sort=False, date_sort_reverse=False, extension=extension, date_filter=date_filter)
-        end()
-    elif choice == '4':
-        sort_option = 'alphabetical'
-        dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
-        reverse_sort = input(f"Sort order ({RED}A{RESET} for A-Z / {RED}Z{RESET} for Z-A): \n").lower() == 'z'
-        extension = input(f"Enter file extension {RED}(e.g., '.txt'){RESET} to filter by extension or leave blank to list all files: \n").lower()
-        date_filter_option = get_date_filter_option()
-        if date_filter_option == 'r':
-            start_date, end_date = get_date_range()
-            date_filter = (start_date, end_date)
-        elif date_filter_option == 'd':
-            specific_date = get_specific_day()
-            date_filter = (specific_date, specific_date)
-        else:
-            date_filter = None
-        start()
-        list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter)
-        end()
-    elif choice == '5':
-        sort_option = 'phrase'
-        dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
-        phrase = input(f"Enter the phrase to search for in file names: \n")
-        start()
-        list_files_in_dir(dir_path, sort_option, phrase_filter=phrase)
+        list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter, phrase_filter=phrase)
         end()
     elif choice == '6':
         break
