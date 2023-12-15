@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import datetime
+import subprocess
+import sys
 
 # ANSI Colors
 RED = "\033[91m"
@@ -11,6 +13,7 @@ RESET = "\033[0m"
 # Get the current time and format it
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime("%Y-%m-%d-%H:%M:%S")
+log_name_time = current_time.strftime("%Y-%m-%d-%H-%M-%S")
 
 # Define start and end separators with red color
 start_separator = f"{RED}================== SCRIPT STARTED {formatted_time} ================================={RESET}"
@@ -82,8 +85,8 @@ def list_files_in_dir(path, sort_option='size', reverse_sort=False, date_sort_re
             file_path, file_size_mb, file_created_time_formatted = file_info
             print(f"File: {file_path}, Size: {file_size_mb:.2f} MB, Created: {file_created_time_formatted}")
 
-        # Save results to .log file
-        log_filename = f"result_{formatted_time}.log"
+        # Save results to .list file
+        log_filename = f"result_{log_name_time}.list"
         with open(log_filename, 'w') as log_file:
             log_file.write(start_separator + '\n')
             for file_info in file_list:
@@ -118,7 +121,8 @@ OPTIONS = {
     '4': 'alphabetical',
     '5': 'phrase',
     '6': 'phrase_in_content',
-    '7': 'exit'
+    '7': 'actions_on_list',
+    '8': 'exit'
 }
 
 while True:
@@ -130,13 +134,17 @@ while True:
     print(f"{GREEN}(4){RESET} List files by alphabetical order")
     print(f"{GREEN}(5){RESET} List files containing phrase in name")
     print(f"{GREEN}(6){RESET} List files containing phrase in content")
-    print(f"{GREEN}(7){RESET} Exit")
+    print(f"{GREEN}(7){RESET} Actions on list")
+    print(f"{GREEN}(8){RESET} Exit")
     
-    choice = input(f"Enter your choice {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}: ")
+    choice = input(f"Enter your choice: \n")
     
     if choice in OPTIONS:
         if OPTIONS[choice] == 'exit':
-            break
+            sys.exit() 
+        elif OPTIONS[choice] == 'actions_on_list':
+           subprocess.run([sys.executable, 'list-actions.py'])
+           continue
 
         sort_option = OPTIONS[choice]
         dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
@@ -162,4 +170,4 @@ while True:
         end()
         
     else:
-        print(f"{RED}Invalid choice.{RESET} Please enter a valid option {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}.")
+        print(f"{RED}Invalid choice.{RESET} Please enter a valid option {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}/{GREEN}(8){RESET}.")
