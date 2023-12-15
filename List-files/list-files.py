@@ -25,7 +25,7 @@ def end():
     print(end_separator)
 
 # Function to list files in a directory based on different options
-def list_files_in_dir(path, sort_option='size', reverse_sort=False, date_sort_reverse=False, extension=None, date_filter=None, phrase_filter=None):
+def list_files_in_dir(path, sort_option='size', reverse_sort=False, date_sort_reverse=False, extension=None, date_filter=None, phrase_filter=None, phrase_in_file_filter=None):
     if not os.path.exists(path):
         print(f"Path '{path}' does not exist.")
         return
@@ -48,6 +48,13 @@ def list_files_in_dir(path, sort_option='size', reverse_sort=False, date_sort_re
                     file_size_mb = file_size / (1024 * 1024)
                     file_created_time = os.path.getctime(item_path)
                     file_created_time_formatted = datetime.datetime.fromtimestamp(file_created_time).strftime("%Y-%m-%d")
+                    if phrase_in_file_filter:
+                        try:
+                            with open(item_path, 'r') as f:
+                                if phrase_in_file_filter not in f.read():
+                                    continue
+                        except UnicodeDecodeError:
+                            continue
                     file_list.append((item_path, file_size_mb, file_created_time_formatted))
 
         if date_filter:
@@ -104,6 +111,16 @@ def get_specific_day():
     specific_date = input(f"Enter a specific date in format {GREEN}'YYYY-MM-DD'{RESET}: \n")
     return specific_date
 
+OPTIONS = {
+    '1': 'size',
+    '2': 'date',
+    '3': 'extension',
+    '4': 'alphabetical',
+    '5': 'phrase',
+    '6': 'phrase_in_content',
+    '7': 'exit'
+}
+
 while True:
     print(f"{GREEN}This script recursively searches directories and files in defined location and prints the sorted file list.{RESET}")
     print(f"{GREEN}MENU:{RESET}")
@@ -111,15 +128,20 @@ while True:
     print(f"{GREEN}(2){RESET} List files by date")
     print(f"{GREEN}(3){RESET} List files by extension")
     print(f"{GREEN}(4){RESET} List files by alphabetical order")
-    print(f"{GREEN}(5){RESET} List files containing phrase")
-    print(f"{GREEN}(6){RESET} Exit")
+    print(f"{GREEN}(5){RESET} List files containing phrase in name")
+    print(f"{GREEN}(6){RESET} List files containing phrase in content")
+    print(f"{GREEN}(7){RESET} Exit")
     
-    choice = input(f"Enter your choice {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}: ")
+    choice = input(f"Enter your choice {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}: ")
     
-    if choice in ('1', '2', '3', '4', '5'):
-        sort_option = 'size' if choice == '1' else 'date' if choice == '2' else 'extension' if choice == '3' else 'alphabetical' if choice == '4' else 'phrase'
+    if choice in OPTIONS:
+        if OPTIONS[choice] == 'exit':
+            break
+
+        sort_option = OPTIONS[choice]
         dir_path = input(f"Type in the {GREEN}path{RESET} that you want to check: \n")
-        reverse_sort = input(f"Sort order ({RED}S{RESET} for small-to-large / {RED}L{RESET} for large-to-small): \n").lower() == 'l'
+        if sort_option != 'phrase_in_content':
+            reverse_sort = input(f"Sort order ({RED}S{RESET} for small-to-large / {RED}L{RESET} for large-to-small): \n").lower() == 'l'
         extension = input(f"Enter file extension {RED}(e.g., '.txt'){RESET} to filter by extension or leave blank to list all files: \n").lower()
         date_filter_option = get_date_filter_option()
         if date_filter_option == 'r':
@@ -130,11 +152,14 @@ while True:
             date_filter = (specific_date, specific_date)
         else:
             date_filter = None
-        phrase = input(f"Enter the phrase to search for in file names: \n") if sort_option == 'phrase' else None
+        phrase = input(f"Enter the phrase to search for: \n") if sort_option in ('phrase', 'phrase_in_content') else None
         start()
-        list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter, phrase_filter=phrase)
+        if sort_option == 'phrase_in_content':
+            phrase_in_file_filter = phrase
+            list_files_in_dir(dir_path, sort_option, date_sort_reverse=False, extension=extension, date_filter=date_filter, phrase_in_file_filter=phrase_in_file_filter)
+        else:
+            list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter, phrase_filter=phrase)
         end()
-    elif choice == '6':
-        break
+        
     else:
-        print(f"{RED}Invalid choice.{RESET} Please enter a valid option {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}.")
+        print(f"{RED}Invalid choice.{RESET} Please enter a valid option {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}.")
