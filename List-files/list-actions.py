@@ -3,6 +3,9 @@ import os
 import datetime
 import subprocess
 import sys
+import shutil
+import re
+import zipfile
 
 # ANSI Colors
 RED = "\033[91m"
@@ -95,36 +98,115 @@ def copy_files():
     global loaded_list_file
     if loaded_list_file:
         print(f"Copying files from the loaded list file: {loaded_list_file}")
-        # Implement logic to copy files from the loaded list file here
+        destination_folder = input("Enter the destination folder path: ")
+        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
+            with open(loaded_list_file, 'r') as file:
+                copied_files = []  # List to store copied files
+                for line in file:
+                    match = re.search(r'File: (.*), Size:', line)
+                    if match:
+                        file_to_copy = match.group(1).strip()
+                        if os.path.exists(file_to_copy) and os.path.isfile(file_to_copy):
+                            destination_file = os.path.join(destination_folder, os.path.basename(file_to_copy))
+                            if not os.path.exists(destination_file):
+                                shutil.copy(file_to_copy, destination_file)
+                                copied_files.append(file_to_copy)
+                                print(f"Copied {file_to_copy} to {destination_folder}")
+                            else:
+                                print(f"Skipped {file_to_copy} because it already exists in the destination folder.")
+                if not copied_files:
+                    print(f"No files were copied.")
+        else:
+            print(f"Destination folder does not exist or is not a directory.")
     else:
-        print(f"{RED}No list file loaded. Please load a list file first.{RESET}")
+        print(f"No list file loaded. Please load a list file first.")
 
 # Function to move files from the list
 def move_files():
     global loaded_list_file
     if loaded_list_file:
         print(f"Moving files from the loaded list file: {loaded_list_file}")
-        # Implement logic to move files from the loaded list file here
+        destination_folder = input("Enter the destination folder path: ")
+        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
+            with open(loaded_list_file, 'r') as file:
+                moved_files = []  # List to store moved files
+                for line in file:
+                    match = re.search(r'File: (.*), Size:', line)
+                    if match:
+                        file_to_move = match.group(1).strip()
+                        if os.path.exists(file_to_move) and os.path.isfile(file_to_move):
+                            destination_file = os.path.join(destination_folder, os.path.basename(file_to_move))
+                            if not os.path.exists(destination_file):
+                                shutil.move(file_to_move, destination_file)
+                                moved_files.append(file_to_move)
+                                print(f"Moved {file_to_move} to {destination_folder}")
+                            else:
+                                print(f"Skipped {file_to_move} because it already exists in the destination folder.")
+                if not moved_files:
+                    print(f"No files were moved.")
+        else:
+            print(f"Destination folder does not exist or is not a directory.")
     else:
-        print(f"{RED}No list file loaded. Please load a list file first.{RESET}")
+        print(f"No list file loaded. Please load a list file first.")
 
 # Function to add files from the list to archive
 def add_to_archive():
     global loaded_list_file
     if loaded_list_file:
-        print(f"Adding files to archive from the loaded list file: {loaded_list_file}")
-        # Implement logic to add files to an archive from the loaded list file here
+        print(f"Creating and moving archive from the loaded list file: {loaded_list_file}")
+        destination_folder = input("Enter the destination folder path for the archive: ")
+        archive_name = input("Enter the archive name (without extension): ")
+        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
+            with open(loaded_list_file, 'r') as file:
+                files_to_archive = []  # List to store files to be archived
+                for line in file:
+                    match = re.search(r'File: (.*), Size:', line)
+                    if match:
+                        file_to_archive = match.group(1).strip()
+                        if os.path.exists(file_to_archive) and os.path.isfile(file_to_archive):
+                            files_to_archive.append(file_to_archive)
+                        else:
+                            print(f"Skipped {file_to_archive} because it does not exist.")
+                
+                if files_to_archive:
+                    archive_path = os.path.join(destination_folder, f"{archive_name}.zip")
+                    with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                        for file_to_archive in files_to_archive:
+                            zipf.write(file_to_archive, os.path.basename(file_to_archive))
+                    
+                    print(f"Created archive {archive_path}")
+                else:
+                    print(f"No files to archive.")
+        else:
+            print(f"Destination folder does not exist or is not a directory.")
     else:
-        print(f"{RED}No list file loaded. Please load a list file first.{RESET}")
+        print(f"No list file loaded. Please load a list file first.")
 
 # Function to delete files from the list
 def delete_files():
     global loaded_list_file
     if loaded_list_file:
         print(f"Deleting files from the loaded list file: {loaded_list_file}")
-        # Implement logic to delete files from the loaded list file here
+        confirm = input("Are you sure you want to delete these files? (yes/no): ")
+        if confirm.lower() == 'yes':
+            with open(loaded_list_file, 'r') as file:
+                deleted_files = []  # List to store deleted files
+                for line in file:
+                    match = re.search(r'File: (.*), Size:', line)
+                    if match:
+                        file_to_delete = match.group(1).strip()
+                        if os.path.exists(file_to_delete) and os.path.isfile(file_to_delete):
+                            os.remove(file_to_delete)
+                            deleted_files.append(file_to_delete)
+                            print(f"Deleted {file_to_delete}")
+                        else:
+                            print(f"Skipped {file_to_delete} because it does not exist.")
+                if not deleted_files:
+                    print(f"No files were deleted.")
+        else:
+            print("Deletion canceled.")
     else:
-        print(f"{RED}No list file loaded. Please load a list file first.{RESET}")
+        print(f"No list file loaded. Please load a list file first.")
 
 # Function to display the loaded list file
 def display_loaded_list():

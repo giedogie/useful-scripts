@@ -168,6 +168,5 @@ while True:
         else:
             list_files_in_dir(dir_path, sort_option, reverse_sort, date_sort_reverse=False, extension=extension, date_filter=date_filter, phrase_filter=phrase)
         end()
-        
     else:
         print(f"{RED}Invalid choice.{RESET} Please enter a valid option {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}/{GREEN}(5){RESET}/{GREEN}(6){RESET}/{GREEN}(7){RESET}/{GREEN}(8){RESET}.")
