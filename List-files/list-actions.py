@@ -8,247 +8,292 @@ import re
 import zipfile
 
 # ANSI Colors
-RED = "\033[91m"
-GREEN = "\033[92m"
-BLUE = "\033[94m"
-RESET = "\033[0m"
+COLORS = {
+    "RED": "\033[91m",
+    "GREEN": "\033[92m",
+    "BLUE": "\033[94m",
+    "RESET": "\033[0m"
+}
 
-# Get the current time and format it
-current_time = datetime.datetime.now()
-formatted_time = current_time.strftime("%Y-%m-%d-%H:%M:%S")
+def current_formatted_time():
+    """Get the current time and format it."""
+    return datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 
-# Define global list file
+# Global Variables
 loaded_list_file = None
+log_file_name = f"log_{current_formatted_time()}.txt"
 
-# Define start and end separators with red color
-start_separator = f"{RED}================== SCRIPT STARTED {formatted_time} ================================={RESET}"
-end_separator = f"{RED}================== SCRIPT ENDED {formatted_time} ================================={RESET}"
+def create_script_separator(action, color="RED", total_length=100):
+    """Create a script separator with given action, color, and length."""
+    base_string = f" SCRIPT {action} {current_formatted_time()} "
+    return f"{COLORS[color]}{base_string.center(total_length, '=')}{COLORS['RESET']}"
 
-# Function to print the start separator
+def initialize_log_file():
+    with open(log_file_name, 'w') as log_file:
+        log_file.write(create_script_separator("ACTIONS-LOG STARTED") + '\n')
+
+def write_log(message):
+    """Write a log message with a timestamp."""
+    with open(log_file_name, 'a') as log_file:
+        log_file.write(f"{current_formatted_time()} - {message}\n")
+
 def start():
-    print(start_separator)
-
-# Function to print the end separator
+    """Print the start separator and write to the log."""
+    print(create_script_separator("STARTED"))
+    write_log("Script started")
 def end():
-    print(end_separator)
+    """Print the end separator and write to the log."""
+    print(create_script_separator("ENDED"))
+    write_log("Script ended")
 
-def display_main_menu():
-    global loaded_list_file  # Make loaded_list_file global to access it here
-    print(f"{GREEN}MENU:{RESET}")
-    print(f"{GREEN}(1){RESET} Open/Close list file")
-    print(f"{GREEN}(2){RESET} Copy files from the list")
-    print(f"{GREEN}(3){RESET} Move files from the list")
-    print(f"{GREEN}(4){RESET} Add files from the list to archive")
-    print(f"{GREEN}(5){RESET} Delete files from the list")
-    print(f"{GREEN}(6){RESET} Display loaded list")
-    print(f"{GREEN}(7){RESET} Go back to main menu")
-    print(f"{GREEN}(8){RESET} Exit")
-    
-    display_loaded_list_file()  # Display loaded list file information
+def get_file_action_confirmation(action):
+    """Get user confirmation for file actions."""
+    user_input = input(f"Are you sure you want to {action} these files? (yes/no): ").lower()
+    write_log(f"User was asked for confirmation to {action} files. User response: {user_input}")
+    return user_input == 'yes'
 
-
-# Function to display the loaded list file information
-def display_loaded_list_file():
-    if loaded_list_file:
-        print(f"Loaded list file: {GREEN}{loaded_list_file}{RESET}")
-    else:
-        print(f"{RED}No list file loaded.{RESET}")
-
-# Function to display the "Load list file" sub-menu
-def load_list_file_menu():
-    while True:
-        print(f"{GREEN}File list options:{RESET}")
-        display_loaded_list_file()
-        print(f"{GREEN}(1){RESET} Choose list file")
-        print(f"{GREEN}(2){RESET} Close list file")
-        print(f"{GREEN}(3){RESET} Show available list files")
-        print(f"{GREEN}(4){RESET} Back")
-        choice = input(f"Enter your choice {GREEN}(1){RESET}/{GREEN}(2){RESET}/{GREEN}(3){RESET}/{GREEN}(4){RESET}: ")
-        
-        if choice == '1':
-            load_list_file()
-        elif choice == '2':
-            close_list_file()  # Close the loaded list file
-        elif choice == '3':
-            list_available_list_files()  # Wywołanie funkcji do listowania dostępnych plików list
-        elif choice == '4':
-            break
-        else:
-            print(f"{RED}Invalid choice. Please enter a valid option.{RESET}")
-
-
-# Function to load a list file
-def load_list_file():
+def process_files_from_list(action, process_function):
+    """General function to process files from the loaded list."""
     global loaded_list_file
-    list_file_path = input(f"Enter the path to the list file to load (or press Enter to go back to the main menu): ")
+    if not loaded_list_file:
+        print(f"{COLORS['RED']}No list file loaded. Please load a list file first.{COLORS['RESET']}")
+        return
+
+    print(f"{action} files from the loaded list file: {loaded_list_file}")
+    destination_folder = input("Enter the destination folder path: ")
+    if not os.path.exists(destination_folder) or not os.path.isdir(destination_folder):
+        print(f"{COLORS['RED']}Destination folder does not exist or is not a directory.{COLORS['RESET']}")
+        return
+
+    with open(loaded_list_file, 'r') as file:
+        for line in file:
+            match = re.search(r'File: (.*), Size:', line)
+            if match:
+                file_path = match.group(1).strip()
+                process_function(file_path, destination_folder)
+
+def copy_file(file_path, destination_folder):
+    """Copy a file to the specified destination folder."""
+    destination_file = os.path.join(destination_folder, os.path.basename(file_path))
+    if not os.path.exists(destination_file):
+        shutil.copy(file_path, destination_file)
+        print(f"Copied {file_path} to {destination_folder}")
+        write_log(f"Copied {file_path} to {destination_folder}")
+    else:
+        print(f"Skipped {file_path} because it already exists in the destination folder.")
+        write_log(f"Skipped {file_path} because it already exists in the destination folder.")
+
+def move_file(file_path, destination_folder):
+    """Move a file to the specified destination folder."""
+    destination_file = os.path.join(destination_folder, os.path.basename(file_path))
+    if not os.path.exists(destination_file):
+        shutil.move(file_path, destination_folder)
+        print(f"Moved {file_path} to {destination_folder}")
+        write_log(f"Moved {file_path} to {destination_folder}")
+    else:
+        print(f"Skipped {file_path} because it already exists in the destination folder.")
+        write_log(f"Skipped {file_path} because it already exists in the destination folder.")
+
+
+def add_to_archive():
+    """Add files from the list to an archive."""
+    if not loaded_list_file:
+        print(f"{COLORS['RED']}No list file loaded. Please load a list file first.{COLORS['RESET']}")
+        write_log("No list file loaded. Please load a list file first.")
+        return
+
+    archive_name = input("Enter the archive name (without extension): ")
+    destination_folder = input("Enter the destination folder path for the archive: ")
+    if not os.path.exists(destination_folder) or not os.path.isdir(destination_folder):
+        print(f"{COLORS['RED']}Destination folder does not exist or is not a directory.{COLORS['RESET']}")
+        write_log("Destination folder does not exist or is not a directory.")
+        return
+
+    archive_path = os.path.join(destination_folder, f"{archive_name}.zip")
+    with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with open(loaded_list_file, 'r') as file:
+            for line in file:
+                match = re.search(r'File: (.*), Size:', line)
+                if match and os.path.exists(match.group(1).strip()):
+                    zipf.write(match.group(1).strip(), os.path.basename(match.group(1).strip()))
+            print(f"Created archive {archive_path}")
+            write_log(f"Created archive {archive_path}")
+
+def delete_files():
+    """Delete files from the list."""
+    if not loaded_list_file:
+        print(f"{COLORS['RED']}No list file loaded. Please load a list file first.{COLORS['RESET']}")
+        write_log("No list file loaded. Please load a list file first.")
+        return
+
+    # Rest of the code...
+
+        print(f"{COLORS['RED']}No list file loaded. Please load a list file first.{COLORS['RESET']}")
+        write_log("No list file loaded. Please load a list file first.")
+        return
+
+    if get_file_action_confirmation("delete"):
+        with open(loaded_list_file, 'r') as file:
+            for line in file:
+                match = re.search(r'File: (.*), Size:', line)
+                if match and os.path.exists(match.group(1).strip()):
+                    os.remove(match.group(1).strip())
+                    print(f"Deleted {match.group(1).strip()}")
+                    write_log(f"Deleted {match.group(1).strip()}")
+    else:
+        print("Deletion canceled.")
+        write_log("Deletion canceled.")
+
+def load_list_file():
+    """Load a list file."""
+    global loaded_list_file
+    list_file_path = input(f"Enter the path to the list file to load (or press Enter to go back): ")
     if list_file_path == "":
         return  # Return to the main menu if Enter is pressed
     elif os.path.exists(list_file_path):
         loaded_list_file = list_file_path
+        print(f"Loaded list file: {list_file_path}")
+        write_log(f"Loaded list file: {list_file_path}")
     else:
-        print(f"{RED}File does not exist. Please enter a valid file path or press Enter to go back to the main menu.{RESET}")
+        print(f"{COLORS['RED']}File does not exist. Please enter a valid file path.{COLORS['RESET']}")
+        write_log("File does not exist. Please enter a valid file path.")
 
 def close_list_file():
+    """Close the currently loaded list file."""
     global loaded_list_file
     loaded_list_file = None
-    print("Closed the loaded list file.")            
+    print("Closed the loaded list file.")
+    write_log("Closed the loaded list file.")
 
-# Function to copy files from the list
-def copy_files():
-    global loaded_list_file
+def display_loaded_list_file():
+    """Display the loaded list file information."""
     if loaded_list_file:
-        print(f"Copying files from the loaded list file: {loaded_list_file}")
-        destination_folder = input("Enter the destination folder path: ")
-        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
-            with open(loaded_list_file, 'r') as file:
-                copied_files = []  # List to store copied files
-                for line in file:
-                    match = re.search(r'File: (.*), Size:', line)
-                    if match:
-                        file_to_copy = match.group(1).strip()
-                        if os.path.exists(file_to_copy) and os.path.isfile(file_to_copy):
-                            destination_file = os.path.join(destination_folder, os.path.basename(file_to_copy))
-                            if not os.path.exists(destination_file):
-                                shutil.copy(file_to_copy, destination_file)
-                                copied_files.append(file_to_copy)
-                                print(f"Copied {file_to_copy} to {destination_folder}")
-                            else:
-                                print(f"Skipped {file_to_copy} because it already exists in the destination folder.")
-                if not copied_files:
-                    print(f"No files were copied.")
-        else:
-            print(f"Destination folder does not exist or is not a directory.")
+        print(f"Loaded list file: {COLORS['GREEN']}{loaded_list_file}{COLORS['RESET']}")
+        write_log(f"Loaded list file: {loaded_list_file}")
     else:
-        print(f"No list file loaded. Please load a list file first.")
-
-# Function to move files from the list
-def move_files():
-    global loaded_list_file
-    if loaded_list_file:
-        print(f"Moving files from the loaded list file: {loaded_list_file}")
-        destination_folder = input("Enter the destination folder path: ")
-        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
-            with open(loaded_list_file, 'r') as file:
-                moved_files = []  # List to store moved files
-                for line in file:
-                    match = re.search(r'File: (.*), Size:', line)
-                    if match:
-                        file_to_move = match.group(1).strip()
-                        if os.path.exists(file_to_move) and os.path.isfile(file_to_move):
-                            destination_file = os.path.join(destination_folder, os.path.basename(file_to_move))
-                            if not os.path.exists(destination_file):
-                                shutil.move(file_to_move, destination_file)
-                                moved_files.append(file_to_move)
-                                print(f"Moved {file_to_move} to {destination_folder}")
-                            else:
-                                print(f"Skipped {file_to_move} because it already exists in the destination folder.")
-                if not moved_files:
-                    print(f"No files were moved.")
-        else:
-            print(f"Destination folder does not exist or is not a directory.")
-    else:
-        print(f"No list file loaded. Please load a list file first.")
-
-# Function to add files from the list to archive
-def add_to_archive():
-    global loaded_list_file
-    if loaded_list_file:
-        print(f"Creating and moving archive from the loaded list file: {loaded_list_file}")
-        destination_folder = input("Enter the destination folder path for the archive: ")
-        archive_name = input("Enter the archive name (without extension): ")
-        if os.path.exists(destination_folder) and os.path.isdir(destination_folder):
-            with open(loaded_list_file, 'r') as file:
-                files_to_archive = []  # List to store files to be archived
-                for line in file:
-                    match = re.search(r'File: (.*), Size:', line)
-                    if match:
-                        file_to_archive = match.group(1).strip()
-                        if os.path.exists(file_to_archive) and os.path.isfile(file_to_archive):
-                            files_to_archive.append(file_to_archive)
-                        else:
-                            print(f"Skipped {file_to_archive} because it does not exist.")
-                
-                if files_to_archive:
-                    archive_path = os.path.join(destination_folder, f"{archive_name}.zip")
-                    with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                        for file_to_archive in files_to_archive:
-                            zipf.write(file_to_archive, os.path.basename(file_to_archive))
-                    
-                    print(f"Created archive {archive_path}")
-                else:
-                    print(f"No files to archive.")
-        else:
-            print(f"Destination folder does not exist or is not a directory.")
-    else:
-        print(f"No list file loaded. Please load a list file first.")
-
-# Function to delete files from the list
-def delete_files():
-    global loaded_list_file
-    if loaded_list_file:
-        print(f"Deleting files from the loaded list file: {loaded_list_file}")
-        confirm = input("Are you sure you want to delete these files? (yes/no): ")
-        if confirm.lower() == 'yes':
-            with open(loaded_list_file, 'r') as file:
-                deleted_files = []  # List to store deleted files
-                for line in file:
-                    match = re.search(r'File: (.*), Size:', line)
-                    if match:
-                        file_to_delete = match.group(1).strip()
-                        if os.path.exists(file_to_delete) and os.path.isfile(file_to_delete):
-                            os.remove(file_to_delete)
-                            deleted_files.append(file_to_delete)
-                            print(f"Deleted {file_to_delete}")
-                        else:
-                            print(f"Skipped {file_to_delete} because it does not exist.")
-                if not deleted_files:
-                    print(f"No files were deleted.")
-        else:
-            print("Deletion canceled.")
-    else:
-        print(f"No list file loaded. Please load a list file first.")
+        print(f"{COLORS['RED']}No list file loaded.{COLORS['RESET']}")
+        write_log("No list file loaded.")
 
 # Function to display the loaded list file
 def display_loaded_list():
     if loaded_list_file:
         with open(loaded_list_file, 'r') as file:
-            print(f"{GREEN}Loaded list file content:{RESET}")
+            print(f"{COLORS['GREEN']}Loaded list file content:{COLORS['RESET']}")
             for line in file:
                 print(line.strip())
     else:
-        print(f"{RED}No list file loaded.{RESET}")        
+        print(f"{COLORS['RED']}No list file loaded.{COLORS['RESET']}")  
+
+def load_list_file_menu():
+    """Display and handle the 'Load list file' menu."""
+    menu_options = [
+        "Choose list file",
+        "Close list file",
+        "Show available list files",
+        "Back"
+    ]
+    while True:
+        print(f"{COLORS['GREEN']}File list options:{COLORS['RESET']}")
+        display_loaded_list_file()
+        for i, option in enumerate(menu_options, 1):
+            print(f"{COLORS['GREEN']}({i}){COLORS['RESET']} {option}")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            load_list_file()
+            write_log("Loaded list file menu: Choose list file")
+        elif choice == '2':
+            close_list_file()
+            write_log("Loaded list file menu: Close list file")
+        elif choice == '3':
+            list_available_list_files()
+            write_log("Loaded list file menu: Show available list files")
+        elif choice == '4':
+            break
+        else:
+            print(f"{COLORS['RED']}Invalid choice. Please enter a valid option.{COLORS['RESET']}")
+            write_log("Loaded list file menu: Invalid choice")
+
 
 def list_available_list_files():
+    """List all available .list files in the current directory."""
     list_files = [f for f in os.listdir('.') if f.endswith('.list')]
     if list_files:
-        print(f"{GREEN}Available list files:{RESET}")
+        print(f"{COLORS['GREEN']}Available list files:{COLORS['RESET']}")
         for file in list_files:
             print(file)
+        write_log("Listed available list files")
     else:
-        print(f"{RED}No list files available.{RESET}")
+        print(f"{COLORS['RED']}No list files available.{COLORS['RESET']}")
+        write_log("No list files available")
 
-# Main loop for the program
-while True:
-    display_main_menu()
-    choice = input(f"Enter your choice: \n" )
-    
+def display_main_menu():
+    """Display the main menu of the script."""
+    menu_options = [
+        "Open/Close list file",
+        "Copy files from the list",
+        "Move files from the list",
+        "Add files from the list to archive",
+        "Delete files from the list",
+        "Display loaded list",
+        "Go back to main menu",
+        "Exit"
+    ]
+    print(f"{COLORS['GREEN']}MENU:{COLORS['RESET']}")
+    for i, option in enumerate(menu_options, 1):
+        print(f"{COLORS['GREEN']}({i}){COLORS['RESET']} {option}")
+    display_loaded_list_file()  # Display loaded list file information
+    write_log("Displayed main menu")
+
+def handle_menu_choice(choice):
+    """Handle the user's menu choice."""
+    write_log(f"User selected menu choice: {choice}")
     if choice == '1':
-        load_list_file_menu()  # Go to the "Load list file" sub-menu
+        load_list_file_menu()
     elif choice == '2':
-        copy_files()
+        process_files_from_list("Copying", copy_file)
     elif choice == '3':
-        move_files()
+        process_files_from_list("Moving", move_file)
     elif choice == '4':
         add_to_archive()
     elif choice == '5':
         delete_files()
     elif choice == '6':
-        display_loaded_list()  # Display the loaded list
+        display_loaded_list()
     elif choice == '7':
         subprocess.run([sys.executable, 'list-files.py'])
-        continue
+        sys.exit()
     elif choice == '8':
-        sys.exit()    
+        finalize_and_exit()
     else:
-        print(f"{RED}Invalid choice. Please enter a valid option.{RESET}")
+        write_log(f"Invalid choice: {choice}")
+        print(f"{COLORS['RED']}Invalid choice. Please enter a valid option.{COLORS['RESET']}")
+    
 
+def finalize_and_exit():
+    """Finalize the script and exit."""
+    write_log("Finalizing the script and exiting")
+    with open(log_file_name, 'a') as log_file:
+        log_file.write(create_script_separator("ACTIONS-LOG ENDED") + '\n')
+    sys.exit()
+
+def main():
+    """Main function of the script."""
+    initialize_log_file()
+    write_log("Script started")
+    start()
+    while True:
+        display_main_menu()
+        choice = input("Enter your choice: ")
+        write_log(f"User entered choice: {choice}")
+        handle_menu_choice(choice)
+
+if __name__ == "__main__":
+    initialize_log_file()
+    write_log("Script started")
+    start()
+    while True:
+        display_main_menu()
+        choice = input("Enter your choice: ")
+        write_log(f"User entered choice: {choice}")
+        handle_menu_choice(choice)
