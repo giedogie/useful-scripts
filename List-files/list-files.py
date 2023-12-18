@@ -318,30 +318,41 @@ def list_by_extension(directory):
         save_results_to_file(files)
 
 
-def list_by_alphabetical(directory, size_operator=None, size_limit=None):
+import os
 
+def list_by_alphabetical(directory, size_operator=None, size_limit=None):
+    """
+    Lists files in the specified directory alphabetically.
+    Optionally filters files by size and modification date.
+    """
+
+    # Check if global directory path is set
     if global_directory_path is None:
         print(f"{COLORS['RED']}No directory path set. Please set the path first.{COLORS['RESET']}")
         return
-    
-    
+
+    # Get user's choice for sorting order
     sort_choice = get_user_sort_choice()
     if sort_choice is None or sort_choice == 'back':
         return  # Return to menu if the user chose to go back
 
     sort_ascending = sort_choice
+
+    # Get time frame for filtering files
     start_date, end_date, back_flag = get_time_frame()
     if back_flag:
         return  # Return to menu if the user chose to go back
 
+    # Get file extension filter
     extension_filter = get_extension()
     if extension_filter == 'back':
         return  # Return to menu if the user chose to go back
 
+    # Get size filter
     size_operator, size_limit = get_size_filter()
     if size_operator == 'back':
         return  # Return to menu if the user chose to go back
-    
+
     files = []
     list_files_recursive(directory, files)
 
@@ -357,66 +368,50 @@ def list_by_alphabetical(directory, size_operator=None, size_limit=None):
             files = [file for file in files if get_file_size_in_mb(file[1]) < size_limit]
 
     # Sort the files alphabetically
-    files.sort(key=lambda x: x[0], reverse=not sort_ascending)
+    files.sort(key=lambda x: os.path.basename(x[0]), reverse=not sort_ascending)
 
     # Display the sorted and filtered files
     for file_path, size in files:
         size_mb = get_file_size_in_mb(size)
         creation_time = get_file_creation_time(file_path)
         print(f"{file_path} - {COLORS['GREEN']}{size_mb:.2f} MB {COLORS['RESET']} - Created: {COLORS['GREEN']}{creation_time}{COLORS['RESET']}")
-        save_results_to_file(files)    
+        save_results_to_file(files)
+
 
 def list_by_phrase_in_name(directory):
-    
+    """
+    Lists files containing a specified phrase in their name.
+    """
+
+    # Check if global directory path is set
     if global_directory_path is None:
         print(f"{COLORS['RED']}No directory path set. Please set the path first.{COLORS['RESET']}")
-        return    
-    
-    """List files containing a specified phrase in their name."""
+        return
+
+    # Get phrase to search in file names
     phrase = input(f"Enter the {COLORS['RED']}phrase{COLORS['RESET']} to search in file names: ").strip().lower()
+
     files = []
     list_files_recursive(directory, files)
 
+    # Filter files containing the phrase in their name
+    filtered_files = [file for file in files if phrase in os.path.basename(file[0]).lower()]
+
+    # Get user's choice for sorting order
     sort_choice = get_user_sort_choice()
     if sort_choice is None or sort_choice == 'back':
         return  # Return to menu if the user chose to go back
 
-    sort_ascending = sort_choice
-    start_date, end_date, back_flag = get_time_frame()
-    if back_flag:
-        return  # Return to menu if the user chose to go back
+    sort_ascending = sort_choice 
+   # Sort the filtered files alphabetically
+    filtered_files.sort(key=lambda x: os.path.basename(x[0]), reverse=not sort_ascending)
 
-    extension_filter = get_extension()
-    if extension_filter == 'back':
-        return  # Return to menu if the user chose to go back
-
-    size_operator, size_limit = get_size_filter()
-    if size_operator == 'back':
-        return  # Return to menu if the user chose to go back
-
-    files = []
-    list_files_recursive(directory, files)
-
-    # Filtering files based on time frame, extension, and size
-    if start_date and end_date:
-        files = [file for file in files if start_date <= get_file_modification_time(file[0]) <= end_date]
-    if extension_filter:
-        files = [file for file in files if file[0].endswith(extension_filter)]
-    if size_operator and size_limit:
-        if size_operator == '>':
-            files = [file for file in files if get_file_size_in_mb(file[1]) > size_limit]
-        elif size_operator == '<':
-            files = [file for file in files if get_file_size_in_mb(file[1]) < size_limit]
-
-    # Filter files containing the phrase in their name
-    filtered_files = [file for file in files if phrase in file[0].lower()]
-
-    # Display and save the filtered files
+    # Display the sorted and filtered files
     for file_path, size in filtered_files:
         size_mb = get_file_size_in_mb(size)
         creation_time = get_file_creation_time(file_path)
-        print(f"{file_path} - {size_mb:.2f} MB - Created: {creation_time}")
-    save_results_to_file(filtered_files)
+        print(f"{file_path} - {COLORS['GREEN']}{size_mb:.2f} MB {COLORS['RESET']} - Created: {COLORS['GREEN']}{creation_time}{COLORS['RESET']}")
+
 
 def list_by_phrase_in_content(directory):
     
