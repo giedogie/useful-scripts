@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 import sys
 import os
-import paramiko
 
-def check_and_install_module(module_name):
+def check_module_installed():
     """
-    Checks if the specified module is installed and installs it if not.
+    Checks if the 'paramiko' module is installed. If not, provides instructions to install it.
     """
     try:
-        __import__(module_name)
-        print(f"Module {module_name} is already installed.")
+        __import__('paramiko')
     except ImportError:
-        print(f"Installing module {module_name}...")
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", module_name])
+        print("Module 'paramiko' is not installed. Please install it using the following command:")
+        print("pip install paramiko")
+        sys.exit(1)
 
 def create_ssh_client(server_ip, user, key_file, port=22):
     """
     Creates an SSH client to connect to the server using an SSH key.
     """
-    check_and_install_module('paramiko')
+    import paramiko
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -62,6 +60,8 @@ def main():
     """
     Main function controlling the script.
     """
+    check_module_installed()
+
     if len(sys.argv) < 5:
         print("Usage: script.py <server_ip> <service_name> <username> <action> <ssh_key_file> [ssh_port]")
         sys.exit(1)
