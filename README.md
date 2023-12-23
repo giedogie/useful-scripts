@@ -1,1 +1,1 @@
-# useful-scripts
+Collection of my scripts.
