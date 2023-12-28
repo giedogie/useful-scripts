@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>== G == EYE ==</title>
+    <style>
+        body {
+            background-color: #000; /* Czarne tło */
+            color: #ccc; /* Jasnoszary tekst */
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .gauge {
+            margin: 20px auto;
+            width: 50%;
+            background-color: #333; /* Ciemniejsze tło dla paska */
+            border: 2px solid #19ff19;
+            position: relative;
+            height: 20px;
+        }
+        .gauge-data {
+            width: 0%; /* Initial width */
+            height: 100%; /* Pełna wysokość kontenera gauge */
+            background-color: #19ff19; /* Kolor paska */
+            transition: width 0.5s;
+        }
+        .gauge-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            color: #ccc; /* Jasnoszary tekst */
+            top: 22px; /* Przesunięcie w dół, poniżej paska */
+        }
+        .alert {
+            color: red;
+            background-color: black;
+            border: 1px solid red;
+            margin-top: 10px; /* Dodatkowy odstęp dla widoczności */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>== G == EYE ==</h1>
+        <div class="gauge">
+            <div id="cpu-gauge" class="gauge-data"></div>
+            <div class="gauge-label">CPU: <span id="cpu-label">0%</span></div>
+        </div>
+        <div class="gauge">
+            <div id="mem-gauge" class="gauge-data"></div>
+            <div class="gauge-label">Memory: <span id="mem-label">0%</span></div>
+        </div>
+        <div class="alert alert-danger" style="display: none;"></div>
+    </div>
+
+    <script>
+        // JavaScript to fetch and update gauges
+        function updateGauges(cpuMetric, memMetric) {
+            var cpuGauge = document.getElementById('cpu-gauge');
+            var memGauge = document.getElementById('mem-gauge');
+            cpuGauge.style.width = cpuMetric + '%';
+            memGauge.style.width = memMetric + '%';
+            document.getElementById('cpu-label').textContent = cpuMetric + '%';
+            document.getElementById('mem-label').textContent = memMetric + '%';
+        }
+
+        function fetchData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    updateGauges(data.cpu_metric, data.mem_metric);
+                    var messageDiv = document.querySelector('.alert');
+                    if(data.message) {
+                        messageDiv.textContent = data.message;
+                        messageDiv.style.display = 'block';
+                    } else {
+                        messageDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        fetchData();
+        setInterval(fetchData, 3000);
+    </script>
+</body>
+</html>
