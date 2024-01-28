@@ -1,0 +1,13 @@
+[Unit]
+Description=Power managment service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/power_managment.py
+Environment="XDG_RUNTIME_DIR=/run/user/1000" "WAYLAND_DISPLAY=wayland-1"
+Restart=on-failure
+User=your_username
+
+[Install]
+WantedBy=multi-user.target
