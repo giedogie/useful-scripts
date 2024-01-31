@@ -11,8 +11,8 @@ def run_swayidle():
     command = f"""
     swayidle \\
         timeout {LOGOUT_TIME} 'swaylock' \\
-        timeout {SUSPEND_TIME} 'systemctl suspend' \\
-        timeout {HIBERNATE_TIME} 'systemctl hibernate' \\
+        timeout {LOGOUT_TIME + SUSPEND_TIME} 'systemctl suspend' \\
+        timeout {LOGOUT_TIME + HIBERNATE_TIME} 'systemctl hibernate' \\
         before-sleep 'systemctl hibernate'
     """
 
